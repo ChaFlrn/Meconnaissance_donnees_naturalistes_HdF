@@ -1,5 +1,13 @@
+##%######################################################%##
+#                                                          #
+####              Chargement des packages               ####
+#                                                          #
+##%######################################################%##
+
+library(tidyverse)
 library(sf)
-library("lubridate")
-library("magrittr")
 library(data.table)
-library(dplyr)
+library(devtools)
+devtools::install_github("PascalIrz/aspe")
+library(aspe)
+library(gdata)
