@@ -6,11 +6,16 @@
 #                                                          #
 ##%######################################################%##
 
+###---------------------------------------------------------#
+cli::cli_h1("Import des données naturalistes")
 
+###---------------------------------------------------------#
 # Picardie nature ------------------------------------------
+cli::cli_h2("Données Clicnat")
+
 ## Chargement du fichier ####
-data_picnat <- sf::read_sf("data/data_brutes/OFB_clicnat.gpkg") 
-load(file = "data/data_brutes_rdata/donnees_clicnat.RData")
+#data_picnat <- sf::read_sf("data/data_brutes/OFB_clicnat.gpkg") 
+base::load("./data/data_brutes/donnees_clicnat.RData")
 
 ## Précision des données ####
 clicnat <- donnees_clicnat %>%
@@ -36,13 +41,14 @@ clicnat <- donnees_clicnat %>%
     geom
   )
 
-clicnat <- clicnat[order(clicnat$date_debut, decreasing = FALSE), ]
 
 clicnat[clicnat$date_debut < "2012-01-01" , "Periode"] <- "historique"  
 clicnat[clicnat$date_debut >= "2012-01-01" & clicnat$date_debut < "2023-01-01", "Periode"] <- "voulue"
 clicnat[clicnat$date_debut >= "2023-01-01", "Periode"] <- "futur" 
 
-clicnat<-dplyr::filter(clicnat,Periode == "voulue") 
+clicnat <- dplyr::filter(clicnat, Periode == "voulue")
+
+clicnat <- clicnat[order(clicnat$date_debut, decreasing = FALSE), ]
 
 ## Sélection des données valides ####
 
@@ -53,27 +59,27 @@ clicnat[clicnat$niveau_validation == "Invalide", "Validation"] <- "non_valide"
 clicnat[clicnat$niveau_validation == "En attente de validation", "Validation"] <- "valide"
 
 clicnat <- dplyr::filter(clicnat, Validation == "valide")
-clichesite <- dplyr::filter(clicnat_12_22, niveau_validation == "En attente de validation")
+clichesite <- dplyr::filter(clicnat, niveau_validation == "En attente de validation")
 
 ## Identification des groupes taxonomiques ####
 levels(as.factor(clicnat$ordre))
 
-amphibiens <-  subset (clicnat, subset = ordre %in%
-                         c("Anura", 
-                           "Caudata", 
-                           "Urodela"))
+amphibiens <-
+  subset(clicnat, subset = ordre %in% c("Anura", "Caudata", "Urodela"))
+
 amphibiens$groupe_taxo <- "amphibiens"
 
-mammiferes <- subset(
-  clicnat,
-  subset = ordre %in%
-    c(
+mammiferes <-
+  subset(
+    clicnat,
+    subset = ordre %in% c(
       "Rodentia",
       "Carnivora",
       "Soricomorpha",
       "Eulipotyphla",
-      "Lagomorpha"))
-
+      "Lagomorpha"
+    )
+  )
 mammiferes$groupe_taxo <- "mammiferes"
 
 chiropteres <- subset(clicnat, subset = ordre %in%
@@ -148,14 +154,16 @@ oiseaux_nicheurs <- subset(
 
 oiseaux_nicheurs$groupe_taxo <- "oiseaux_nicheurs"
 
-clicnat_groups <- rbind.data.frame(amphibiens, chiropteres)
-clicnat_groups <- rbind.data.frame(clicnat_groups, mammiferes)
-clicnat_groups <- rbind.data.frame(clicnat_groups, odonates)
-clicnat_groups <- rbind.data.frame(clicnat_groups, oiseaux_nicheurs)
-clicnat_groups <- rbind.data.frame(clicnat_groups, orthopteres)
-clicnat_groups <- rbind.data.frame(clicnat_groups, poissons)
-clicnat_groups <- rbind.data.frame(clicnat_groups, reptiles)
-clicnat_groups <- rbind.data.frame(clicnat_groups, rhopaloceres)
+clicnat_groups <- data.table::rbindlist(list(amphibiens,
+                                              chiropteres,
+                                              mammiferes,
+                                              odonates,
+                                              oiseaux_nicheurs,
+                                              orthopteres,
+                                              poissons,
+                                              reptiles,
+                                              rhopaloceres)) %>% 
+  as.data.frame()
 
 ## Vérfication de la présence de doublons ####
 clicnat_groups <- clicnat_groups[!duplicated(clicnat_groups$id_synthese), ]
@@ -165,75 +173,64 @@ save(clicnat_groups, file = "output/output_rdata/clicnat_groups.RData")
 ## Toutes espèces confondues ####
 #### Trier et renommer les colonnes ####
 clicnat <- clicnat_groups %>%
-  dplyr::select(id_synthese,
-         cd_nom,
-         date_debut,
-         nom_cite,
-         groupe_taxo, 
-         geom)
-
-colnames(clicnat) <- c("id",
-                       "cd_nom",
-                       "date",
-                       "nom_scientifique",
-                       "groupe_taxo",
-                       "geom")
+  dplyr::select(id = id_synthese,
+                cd_nom,
+                date = date_debut,
+                nom_scientifique = nom_cite,
+                groupe_taxo, 
+                geom)
 
 clicnat$source <- "picnat"  
 
+#### Sélection des données géométriques pour ne retenir que les points ####
+clicnat <- 
+  sf::st_as_sf(clicnat) %>% 
+  dplyr::filter(sf::st_is(. , "MULTIPOINT"))
+
 save(clicnat, file = "output/output_rdata/clicnat.RData")
-
-#### Sélection des données géométriques ####
-sf::st_write(picnat_pro,
-         "picnat_point.gpkg")
-
-picnat_point<- sf::read_sf("clicnat_point.gpkg") 
-
-
-save(picnat_point, file = "Data_analyses/Clicnat/picnat_pro.RData")
 
 ## Sélection des espèces protégées ####
 especes <- utils::read.csv(file = "data/statut_especes.csv", h = TRUE)
+
 especes_pro <- dplyr::filter(especes, protection == "oui")
 
 clicnat_esp_pro <- merge(clicnat_groups, especes_pro, by.x = "cd_nom", by.y = "cd_nom")
 
-clicnat_esp_pro <- clicnat_esp_pro %>%
-  dplyr::select(
-    id_synthese,
-    cd_ref_sp,
-    cd_nom,
-    date_debut,
-    nom_cite.y,
-    regne,
-    classe,
-    ordre.y,
-    famille,
-    menace_region.y,
-    rarete_region,
-    nombre_min,
-    nombre_max,
-    niveau_validation,
-    niveau_sensibilite,
-    producteur)
+# clicnat_esp_pro <- clicnat_esp_pro %>%
+#   dplyr::select(
+#     id_synthese,
+#     cd_ref_sp,
+#     cd_nom,
+#     date_debut,
+#     nom_cite.y,
+#     regne,
+#     classe,
+#     ordre.y,
+#     famille,
+#     menace_region.y,
+#     rarete_region,
+#     nombre_min,
+#     nombre_max,
+#     niveau_validation,
+#     niveau_sensibilite,
+#     producteur)
 
 #### Trier et renommer les colonnes ####
 clicnat_esp_pro <- clicnat_esp_pro %>%
-  dplyr::select(id_synthese,cd_nom,date_debut, nom_cite.y, ordre.y, menace_region.y, geometry)
+  dplyr::select(id = id_synthese,
+                cd_nom,
+                date = date_debut,
+                nom_scientifique = nom_cite.y,
+                ordre = ordre.y,
+                menace_region = menace_region.y,
+                geom)
 
-colnames(clicnat_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region","geom")
+clicnat_esp_pro$source <- "picnat"
 
-clicnat_esp_pro$source <- "picnat"  
-
-save(clicnat_esp_pro, file = "output/output_rdata/clicnat_esp_pro.RData")
-
-#### Sélection des données géométriques ####
-sf::st_write(picnat_pro,
-         "picnat_point.gpkg")
-
-picnat_point <- sf::read_sf("clicnat_point.gpkg") 
-
-save(picnat_point, file="Data_analyses/Clicnat/picnat_pro.RData")
+#### Sélection des données géométriques pour ne retenir que les points ####
+clicnat_esp_pro <- 
+  sf::st_as_sf(clicnat_esp_pro) %>% 
+  dplyr::filter(sf::st_is(. , "MULTIPOINT") | sf::st_is(. , "POINT"))
 
 clicnat_esp_pro <- clicnat_esp_pro %>%
   select(id,cd_nom,date, nom_scientifique,ordre,menace_region,source, geom)
@@ -243,9 +240,11 @@ save(clicnat_esp_pro, file="output/output_rdata/clicnat_esp_pro.RData")
 
 
 # Groupe ornithologique et naturaliste  ------------------------------------------
+cli::cli_h2("Données Groupe ornithologique et naturaliste")
+
 ## Chargement fichier ####
-data_gon <- sf::read_sf("Data_brutes/Sirf/230220_all_expo_deb2012") 
-load(file="data/data_brutes_rdata/donnees_Gon.RData")
+data_gon <- sf::read_sf("Data_brutes/Sirf/230220_all_expo_deb2012")
+base::load(file="data/data_brutes_rdata/donnees_Gon.RData")
 
 ## Précision des données ####
 gon <- donnees_Gon %>%
@@ -253,24 +252,24 @@ gon <- donnees_Gon %>%
 
 gon<-gon[order(gon$date_d,decreasing=F),]
 
-gon[gon$date_d < "2012-01-01" ,"Periode"] <- "historique"  
+gon[gon$date_d < "2012-01-01" ,"Periode"] <- "historique"
 gon[gon$date_d >= "2012-01-01" & gon$date_d <"2023-01-01" ,"Periode"] <- "voulue"
-gon[gon$date_d >= "2023-01-01","Periode"] <- "futur" 
+gon[gon$date_d >= "2023-01-01","Periode"] <- "futur"
 
-gon<-filter(gon,Periode=="voulue") 
+gon<-filter(gon,Periode=="voulue")
 
 ## Sélection des données valides ####
 levels(as.factor(gon$valid))
 
 gon <- gon%>% filter(!is.na(valid))
 
-gon[gon$valid == "Certain  ‐ très probable" ,"Validation"] <- "valide" 
+gon[gon$valid == "Certain  ‐ très probable" ,"Validation"] <- "valide"
 gon[gon$valid == "Probable","Validation"] <- "valide"
 gon[gon$valid == "Douteux","Validation"] <- "non_valide"
 gon[gon$valid == "Non évalué","Validation"] <- "valide"
 
-gon <- filter(gon, Validation=="valide")
-gonhesite <- filter(gon, valid=="Non évalué")
+gon <- dplyr::filter(gon, Validation=="valide")
+gonhesite <- dplyr::filter(gon, valid=="Non évalué")
 
 ## Identification des groupes taxonomiques ####
 levels(as.factor(gon$ordre))
@@ -330,7 +329,7 @@ gon <- gon_groups %>%
   select(id_cit,cdref,date_d, nom_lat,groupe_taxo, geom)
 colnames(gon) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
 
-gon$source <- "gon"  
+gon$source <- "gon"
 
 save(gon, file="output/output_rdata/gon.RData")
 
@@ -347,7 +346,7 @@ gon_esp_pro <- gon_esp_pro %>%
 colnames(gon_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region","geom")
 
 gon_esp_pro <-as.data.frame(gon_esp_pro)
-gon_esp_pro$source <- "gon" 
+gon_esp_pro$source <- "gon"
 
 ### Trier géométrie ####
 
@@ -366,13 +365,13 @@ save(gon_esp_pro, file="output/output_rdata/gon_esp_pro.RData")
 # OFB ####
 ## ASPE ####
 ### Récupération des données ####
-load(file="data/data_brutes_rdata/tables_sauf_mei_2023_04_07_09_39_32.RData")
+base::load(file="data/data_brutes_rdata/tables_sauf_mei_2023_04_07_09_39_32.RData")
 
 passerelle<-mef_creer_passerelle()
-passerelle_hdf<-passerelle %>% 
-  mef_ajouter_dept() %>%  #ajout d'une colonne numéro de département 
-  filter(dept %in% c('02', '59', '60', '62', '80')) %>% #filtrage des départements des Hdf 
-  select(dept, ope_id,pop_id,sta_id,pre_id,lop_id) %>%   # selection des colonnes qui m'intéressent 
+passerelle_hdf<-passerelle %>%
+  mef_ajouter_dept() %>%  #ajout d'une colonne numéro de département
+  filter(dept %in% c('02', '59', '60', '62', '80')) %>% #filtrage des départements des Hdf
+  select(dept, ope_id,pop_id,sta_id,pre_id,lop_id) %>%   # selection des colonnes qui m'intéressent
   distinct() #suppression des lignes doublons (lignes générées à cause des colonnes de lots etc.)
 
 data("dictionnaire")
@@ -385,9 +384,9 @@ gdata::keep(operation,
             passerelle_hdf,
             sure = TRUE)
 
-data_aspe <- passerelle_hdf %>% 
-  mef_ajouter_ope_date() %>% 
-  filter(ope_date > lubridate::dmy("31/12/2011") & ope_date < lubridate::dmy("01/01/2023")) %>% 
+data_aspe <- passerelle_hdf %>%
+  mef_ajouter_ope_date() %>%
+  filter(ope_date > lubridate::dmy("31/12/2011") & ope_date < lubridate::dmy("01/01/2023")) %>%
   droplevels()
 
 data_op <- operation %>%
@@ -443,7 +442,7 @@ aspe <- aspe %>%
 colnames(aspe) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
 
 aspe <- as.data.frame(aspe)
-aspe$source <- "ofb" 
+aspe$source <- "ofb"
 
 save(aspe, file="output/output_rdata/aspe.RData")
 
@@ -465,7 +464,7 @@ aspe_esp_pro <- aspe_esp_pro %>%
 colnames(aspe_esp_pro) <-c("id","cd_nom","date","nom_scientifique","ordre","menace_region", "geom")
 
 aspe_esp_pro <- as.data.frame(aspe_esp_pro)
-aspe_esp_pro$source <- "ofb" 
+aspe_esp_pro$source <- "ofb"
 
 save(aspe_esp_pro, file="output/output_rdata/aspe_esp_pro.RData")
 
@@ -484,20 +483,20 @@ oison$date <- dmy(oison$Date)
 
 oison<-oison[order(oison$date,decreasing=F),]
 
-oison[oison$date < "2012-01-01" ,"Periode"] <- "historique"  
+oison[oison$date < "2012-01-01" ,"Periode"] <- "historique"
 oison[oison$date >= "2012-01-01" & oison$date <"2023-01-01" ,"Periode"] <- "voulue"
-oison[oison$date >= "2023-01-01","Periode"] <- "futur" 
+oison[oison$date >= "2023-01-01","Periode"] <- "futur"
 
-oison<-filter(oison,Periode=="voulue") 
+oison<-filter(oison,Periode=="voulue")
 
-oison[oison$Departement == "AISNE" ,"Departement"] <- "02"  
+oison[oison$Departement == "AISNE" ,"Departement"] <- "02"
 oison[oison$Departement == "SOMME" ,"Departement"] <- "80"
-oison[oison$Departement == "NORD","Departement"] <- "59" 
-oison[oison$Departement == "OISE","Departement"] <- "60" 
-oison[oison$Departement == "PAS-DE-CALAIS","Departement"] <- "62" 
+oison[oison$Departement == "NORD","Departement"] <- "59"
+oison[oison$Departement == "OISE","Departement"] <- "60"
+oison[oison$Departement == "PAS-DE-CALAIS","Departement"] <- "62"
 
 ### Sélection des données d'observation ####
-oison<-filter(oison,Nature=="┣ Observation") 
+oison<-filter(oison,Nature=="┣ Observation")
 
 ### Récupération de la colonne "cd_nom" ##
 cd_nom <- read.csv(file="data/data_brutes/oison_taxon.csv",h=T,dec=",",sep=",")
@@ -508,7 +507,7 @@ oison <- oison %>%
   select(Identifiant,Date, Identifiant_tax, cd_nom, Departement, Geometrie, X,Y)
 
 ### Identification des groupes taxonomiques ####
-load(file="nettoyage_bases/Data_analyses/groupe_taxo.RData")
+base::load(file="nettoyage_bases/Data_analyses/groupe_taxo.RData")
 
 oison_groups<-merge(oison, group_taxo, by.x="cd_nom", by.y="cd_nom")
 
@@ -531,7 +530,7 @@ oison <- oison %>%
 colnames(oison) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
 
 oison <- as.data.frame(oison)
-oison$source <- "ofb" 
+oison$source <- "ofb"
 
 save(oison, file="output/output_rdata/oison.RData")
 
@@ -544,7 +543,7 @@ oison_esp_pro <- oison_esp_pro %>%
 #### Trier et renommer les colonnes ####
 colnames(oison_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region","departements","geom","x","y")
 
-oison_esp_pro$source <- "oison"  
+oison_esp_pro$source <- "oison"
 
 oison_esp_pro <- st_as_sf(oison_esp_pro, coords = c("x","y"), crs = 2154, remove =TRUE)
 
@@ -557,7 +556,7 @@ save(oison_esp_pro, file="output/output_rdata/oison_esp_pro.RData")
 
 ## PMCC ####
 ### Chargement du fichier ####
-data_pmcc<- sf::read_sf("Data_brutes/Ofb/Export_RezoPMCC_DonneesValides.shp") 
+data_pmcc<- sf::read_sf("Data_brutes/Ofb/Export_RezoPMCC_DonneesValides.shp")
 
 ### Précision des données ####
 pmcc <- data_pmcc %>%
@@ -567,21 +566,21 @@ pmcc$date <- ymd(pmcc$date_obs)
 
 pmcc<-pmcc[order(pmcc$date,decreasing=F),]
 
-pmcc[pmcc$date < "2012-01-01" ,"Periode"] <- "historique"  
+pmcc[pmcc$date < "2012-01-01" ,"Periode"] <- "historique"
 pmcc[pmcc$date >= "2012-01-01" & pmcc$date <"2023-01-01" ,"Periode"] <- "voulue"
-pmcc[pmcc$date >= "2023-01-01","Periode"] <- "futur" 
+pmcc[pmcc$date >= "2023-01-01","Periode"] <- "futur"
 
-pmcc<-filter(pmcc,Periode=="voulue") 
+pmcc<-filter(pmcc,Periode=="voulue")
 
 ### Sélection des départements de la région ####
 
-pmcc[pmcc$insee_dep == "59" ,"Region"] <- "HdF"  
-pmcc[pmcc$insee_dep == "60" ,"Region"] <- "HdF"  
-pmcc[pmcc$insee_dep == "62" ,"Region"] <- "HdF" 
-pmcc[pmcc$insee_dep == "80" ,"Region"] <- "HdF"  
-pmcc[pmcc$insee_dep =="02","Region"] <- "HdF"  
+pmcc[pmcc$insee_dep == "59" ,"Region"] <- "HdF"
+pmcc[pmcc$insee_dep == "60" ,"Region"] <- "HdF"
+pmcc[pmcc$insee_dep == "62" ,"Region"] <- "HdF"
+pmcc[pmcc$insee_dep == "80" ,"Region"] <- "HdF"
+pmcc[pmcc$insee_dep =="02","Region"] <- "HdF"
 
-pmcc<-filter(pmcc,Region=="HdF") 
+pmcc<-filter(pmcc,Region=="HdF")
 
 ### Identification du groupe taxonomique ####
 pmcc$groupe_taxo <- "mammiferes"
@@ -597,7 +596,7 @@ pmcc <- pmcc_groups %>%
   select(identifian,cd_nom,date, nom_vern,groupe_taxo, geometry)
 colnames(pmcc) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
 
-pmcc$source <- "ofb"  
+pmcc$source <- "ofb"
 
 save(pmcc, file="output/output_rdata/pmcc.RData")
 
@@ -635,7 +634,7 @@ sinp[sinp$date < "2012-01-01" ,"Periode"] <- "historique"
 sinp[sinp$date >= "2012-01-01" & sinp$date <"2023-01-01" ,"Periode"] <- "voulue"
 sinp[sinp$date >= "2023-01-01","Periode"] <- "futur"
 
-sinp<-filter(sinp,Periode=="voulue") 
+sinp<-filter(sinp,Periode=="voulue")
 
 ### Ajouter les coordonnées GPS ####
 #### Récupérer les départements #####
@@ -699,7 +698,7 @@ sinp <- sinp_groups %>%
   select(cleObs,cdNom,date, nomCite,groupe_taxo, geometry)
 colnames(sinp) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
 
-sinp$source <- "sinp"  
+sinp$source <- "sinp"
 
 save(sinp, file="output/output_rdata/sinp.RData")
 
@@ -714,7 +713,7 @@ sinp_esp_pro <- sinp_esp_pro %>%
   select(id_obs,cd_nom,date, nom_scientifique, ordre, menace_region, geom)
 colnames(sinp_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region", "geom")
 
-sinp_esp_pro$source <- "sinp"  
+sinp_esp_pro$source <- "sinp"
 
 save(sinp_esp_pro, file="output/output_rdata/sinp_esp_pro.RData")
 
