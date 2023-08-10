@@ -1,137 +1,237 @@
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(sf)
-library(devtools)
-devtools::install_github("PascalIrz/aspe")
-library(aspe)
-library(gdata)
-library("lubridate")
-library("magrittr")
+##%######################################################%##
+#                                                          #
+####   Récupération des bases de données                ####
+###     Nettoyage et homogénéisation des variables       ###
+##             Date : Août 2023                           ##
+#                                                          #
+##%######################################################%##
 
-# Picardie nature ####
+
+# Picardie nature ------------------------------------------
 ## Chargement du fichier ####
-data_picnat<- sf::read_sf("data/data_brutes/OFB_clicnat.gpkg") 
-load(file="data/data_brutes_rdata/donnees_clicnat.RData")
+data_picnat <- sf::read_sf("data/data_brutes/OFB_clicnat.gpkg") 
+load(file = "data/data_brutes_rdata/donnees_clicnat.RData")
 
 ## Précision des données ####
 clicnat <- donnees_clicnat %>%
-  select(id_synthese,cd_ref_sp,cd_ref,cd_nom,date_debut, nom_cite, regne, classe, ordre, famille, menace_region, rarete_region, nombre_min, nombre_max,  communes, niveau_validation,niveau_sensibilite, producteur, geom)
+  dplyr::select(
+    id_synthese,
+    cd_ref_sp,
+    cd_ref,
+    cd_nom,
+    date_debut,
+    nom_cite,
+    regne,
+    classe,
+    ordre,
+    famille,
+    menace_region,
+    rarete_region,
+    nombre_min,
+    nombre_max,
+    communes,
+    niveau_validation,
+    niveau_sensibilite,
+    producteur,
+    geom
+  )
 
-clicnat<-clicnat[order(clicnat$date_debut,decreasing=F),]
+clicnat <- clicnat[order(clicnat$date_debut, decreasing = FALSE), ]
 
-clicnat[clicnat$date_debut < "2012-01-01" ,"Periode"] <- "historique"  
-clicnat[clicnat$date_debut >= "2012-01-01" & clicnat$date_debut <"2023-01-01" ,"Periode"] <- "voulue"
-clicnat[clicnat$date_debut >= "2023-01-01","Periode"] <- "futur" 
+clicnat[clicnat$date_debut < "2012-01-01" , "Periode"] <- "historique"  
+clicnat[clicnat$date_debut >= "2012-01-01" & clicnat$date_debut < "2023-01-01", "Periode"] <- "voulue"
+clicnat[clicnat$date_debut >= "2023-01-01", "Periode"] <- "futur" 
 
-clicnat<-filter(clicnat,Periode=="voulue") 
+clicnat<-dplyr::filter(clicnat,Periode == "voulue") 
 
 ## Sélection des données valides ####
 
-clicnat[clicnat$niveau_validation == "Certain - très probable" ,"Validation"] <- "valide" 
-clicnat[clicnat$niveau_validation == "Probable","Validation"] <- "valide"
-clicnat[clicnat$niveau_validation == "Douteux","Validation"] <- "non_valide"
-clicnat[clicnat$niveau_validation == "Invalide","Validation"] <- "non_valide"
-clicnat[clicnat$niveau_validation == "En attente de validation","Validation"] <- "valide"
+clicnat[clicnat$niveau_validation == "Certain - très probable", "Validation"] <- "valide" 
+clicnat[clicnat$niveau_validation == "Probable", "Validation"] <- "valide"
+clicnat[clicnat$niveau_validation == "Douteux", "Validation"] <- "non_valide"
+clicnat[clicnat$niveau_validation == "Invalide", "Validation"] <- "non_valide"
+clicnat[clicnat$niveau_validation == "En attente de validation", "Validation"] <- "valide"
 
-clicnat <- filter(clicnat, Validation=="valide")
-clichesite <- filter(clicnat_12_22, niveau_validation=="En attente de validation")
+clicnat <- dplyr::filter(clicnat, Validation == "valide")
+clichesite <- dplyr::filter(clicnat_12_22, niveau_validation == "En attente de validation")
 
 ## Identification des groupes taxonomiques ####
 levels(as.factor(clicnat$ordre))
 
-amphibiens <-  subset (clicnat, subset= ordre %in%
-                         c("Anura","Caudata","Urodela"))
+amphibiens <-  subset (clicnat, subset = ordre %in%
+                         c("Anura", 
+                           "Caudata", 
+                           "Urodela"))
 amphibiens$groupe_taxo <- "amphibiens"
 
-mammiferes <- subset(clicnat,subset = ordre %in%
-                       c("Rodentia","Carnivora","Soricomorpha","Eulipotyphla","Lagomorpha"))
+mammiferes <- subset(
+  clicnat,
+  subset = ordre %in%
+    c(
+      "Rodentia",
+      "Carnivora",
+      "Soricomorpha",
+      "Eulipotyphla",
+      "Lagomorpha"))
+
 mammiferes$groupe_taxo <- "mammiferes"
 
-chiropteres <- subset(clicnat,subset = ordre %in%
+chiropteres <- subset(clicnat, subset = ordre %in%
                         c("Chiroptera"))
 chiropteres$groupe_taxo <- "chiropteres"
 
-reptiles <- subset(clicnat,subset = ordre %in%
-                     c("Squamata","Chelonii"))
+reptiles <- subset(clicnat, subset = ordre %in%
+                     c("Squamata", 
+                       "Chelonii"))
 reptiles$groupe_taxo <- "reptiles"
 
-odonates <- subset(clicnat,subset = ordre %in%
+odonates <- subset(clicnat, subset = ordre %in%
                      c("Odonata"))
 odonates$groupe_taxo <- "odonates"
 
-orthopteres <- subset(clicnat,subset = ordre %in%
+orthopteres <- subset(clicnat, subset = ordre %in%
                         c("Orthoptera"))
 orthopteres$groupe_taxo <- "orthopteres"
 
-rhopaloceres <- subset(clicnat,subset = ordre %in%
+rhopaloceres <- subset(clicnat, subset = ordre %in%
                          c("Lepidoptera"))
 rhopaloceres$groupe_taxo <- "rhopaloceres"
 
-poissons <- subset(clicnat,subset= ordre %in%
-                     c("Petromyzontiformes","Anguilliformes","Cypriniformes","Esociformes","Salmoniformes","Gadiformes","Decapoda","Atheriniformes","Gasterosteiformes","Perciformes","Pleuronectiformes","Rajiformes","Scorpaeniformes","Siluriformes","Tetraodontiformes"))
+poissons <- subset(
+  clicnat,
+  subset = ordre %in%
+    c(
+      "Petromyzontiformes",
+      "Anguilliformes",
+      "Cypriniformes",
+      "Esociformes",
+      "Salmoniformes",
+      "Gadiformes",
+      "Decapoda",
+      "Atheriniformes",
+      "Gasterosteiformes",
+      "Perciformes",
+      "Pleuronectiformes",
+      "Rajiformes",
+      "Scorpaeniformes",
+      "Siluriformes",
+      "Tetraodontiformes"))
 poissons$groupe_taxo <- "poissons"
 
-oiseaux_nicheurs <- subset(clicnat, subset= ordre %in%
-                             c("Anseriformes","Falconiformes","Ciconiiformes","Galliformes","Gruiformes","Charadriiformes","Passeriformes","Caprimulgiformes","Podicipediformes","Strigiformes","Cuculiformes","Piciformes","Procellariiformes","Apodiformes","Coraciiformes","Pelecaniformes","Accipitriformes","Bucerotiformes","Columbiformes","Gaviiformes","Otidiformes","Phoenicopteriformes","Psittaciformes"))
+oiseaux_nicheurs <- subset(
+  clicnat,
+  subset = ordre %in%
+    c(
+      "Anseriformes",
+      "Falconiformes",
+      "Ciconiiformes",
+      "Galliformes",
+      "Gruiformes",
+      "Charadriiformes",
+      "Passeriformes",
+      "Caprimulgiformes",
+      "Podicipediformes",
+      "Strigiformes",
+      "Cuculiformes",
+      "Piciformes",
+      "Procellariiformes",
+      "Apodiformes",
+      "Coraciiformes",
+      "Pelecaniformes",
+      "Accipitriformes",
+      "Bucerotiformes",
+      "Columbiformes",
+      "Gaviiformes",
+      "Otidiformes",
+      "Phoenicopteriformes",
+      "Psittaciformes"))
+
 oiseaux_nicheurs$groupe_taxo <- "oiseaux_nicheurs"
 
-clicnat_groups <- rbind.data.frame(amphibiens,chiropteres)
-clicnat_groups <- rbind.data.frame(clicnat_groups,mammiferes)
-clicnat_groups <- rbind.data.frame(clicnat_groups,odonates)
-clicnat_groups <- rbind.data.frame(clicnat_groups,oiseaux_nicheurs)
-clicnat_groups <- rbind.data.frame(clicnat_groups,orthopteres)
-clicnat_groups <- rbind.data.frame(clicnat_groups,poissons)
-clicnat_groups <- rbind.data.frame(clicnat_groups,reptiles)
-clicnat_groups <- rbind.data.frame(clicnat_groups,rhopaloceres)
+clicnat_groups <- rbind.data.frame(amphibiens, chiropteres)
+clicnat_groups <- rbind.data.frame(clicnat_groups, mammiferes)
+clicnat_groups <- rbind.data.frame(clicnat_groups, odonates)
+clicnat_groups <- rbind.data.frame(clicnat_groups, oiseaux_nicheurs)
+clicnat_groups <- rbind.data.frame(clicnat_groups, orthopteres)
+clicnat_groups <- rbind.data.frame(clicnat_groups, poissons)
+clicnat_groups <- rbind.data.frame(clicnat_groups, reptiles)
+clicnat_groups <- rbind.data.frame(clicnat_groups, rhopaloceres)
 
 ## Vérfication de la présence de doublons ####
-clicnat_groups<-clicnat_groups[!duplicated(clicnat_groups$id_synthese), ]
+clicnat_groups <- clicnat_groups[!duplicated(clicnat_groups$id_synthese), ]
 
-save(clicnat_groups, file="output/output_rdata/clicnat_groups.RData")
+save(clicnat_groups, file = "output/output_rdata/clicnat_groups.RData")
 
 ## Toutes espèces confondues ####
 #### Trier et renommer les colonnes ####
 clicnat <- clicnat_groups %>%
-  select(id_synthese,cd_nom,date_debut, nom_cite,groupe_taxo, geom)
-colnames(clicnat) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
+  dplyr::select(id_synthese,
+         cd_nom,
+         date_debut,
+         nom_cite,
+         groupe_taxo, 
+         geom)
+
+colnames(clicnat) <- c("id",
+                       "cd_nom",
+                       "date",
+                       "nom_scientifique",
+                       "groupe_taxo",
+                       "geom")
 
 clicnat$source <- "picnat"  
 
-save(clicnat, file="output/output_rdata/clicnat.RData")
+save(clicnat, file = "output/output_rdata/clicnat.RData")
 
 #### Sélection des données géométriques ####
-st_write(picnat_pro,
+sf::st_write(picnat_pro,
          "picnat_point.gpkg")
 
 picnat_point<- sf::read_sf("clicnat_point.gpkg") 
 
 
-save(picnat_point, file="Data_analyses/Clicnat/picnat_pro.RData")
+save(picnat_point, file = "Data_analyses/Clicnat/picnat_pro.RData")
 
 ## Sélection des espèces protégées ####
-especes <- read.csv(file="data/statut_especes.csv",h=T)
-especes_pro <- filter(especes, protection=="oui")
+especes <- utils::read.csv(file = "data/statut_especes.csv", h = TRUE)
+especes_pro <- dplyr::filter(especes, protection == "oui")
 
-clicnat_esp_pro<-merge(clicnat_groups, especes_pro, by.x="cd_nom", by.y="cd_nom")
+clicnat_esp_pro <- merge(clicnat_groups, especes_pro, by.x = "cd_nom", by.y = "cd_nom")
 
 clicnat_esp_pro <- clicnat_esp_pro %>%
-  select(id_synthese,cd_ref_sp,cd_nom,date_debut, nom_cite.y, regne, classe, ordre.y, famille, menace_region.y, rarete_region, nombre_min, nombre_max, niveau_validation,niveau_sensibilite, producteur)
+  dplyr::select(
+    id_synthese,
+    cd_ref_sp,
+    cd_nom,
+    date_debut,
+    nom_cite.y,
+    regne,
+    classe,
+    ordre.y,
+    famille,
+    menace_region.y,
+    rarete_region,
+    nombre_min,
+    nombre_max,
+    niveau_validation,
+    niveau_sensibilite,
+    producteur)
 
 #### Trier et renommer les colonnes ####
 clicnat_esp_pro <- clicnat_esp_pro %>%
-  select(id_synthese,cd_nom,date_debut, nom_cite.y, ordre.y, menace_region.y, geometry)
+  dplyr::select(id_synthese,cd_nom,date_debut, nom_cite.y, ordre.y, menace_region.y, geometry)
+
 colnames(clicnat_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region","geom")
 
 clicnat_esp_pro$source <- "picnat"  
 
-save(clicnat_esp_pro, file="output/output_rdata/clicnat_esp_pro.RData")
+save(clicnat_esp_pro, file = "output/output_rdata/clicnat_esp_pro.RData")
 
 #### Sélection des données géométriques ####
-st_write(picnat_pro,
+sf::st_write(picnat_pro,
          "picnat_point.gpkg")
 
-picnat_point<- sf::read_sf("clicnat_point.gpkg") 
+picnat_point <- sf::read_sf("clicnat_point.gpkg") 
 
 save(picnat_point, file="Data_analyses/Clicnat/picnat_pro.RData")
 
@@ -142,7 +242,7 @@ save(clicnat_esp_pro, file="output/output_rdata/clicnat_esp_pro.RData")
 
 
 
-# Groupe ornithologique et naturaliste ####
+# Groupe ornithologique et naturaliste  ------------------------------------------
 ## Chargement fichier ####
 data_gon <- sf::read_sf("Data_brutes/Sirf/230220_all_expo_deb2012") 
 load(file="data/data_brutes_rdata/donnees_Gon.RData")
@@ -266,6 +366,8 @@ save(gon_esp_pro, file="output/output_rdata/gon_esp_pro.RData")
 # OFB ####
 ## ASPE ####
 ### Récupération des données ####
+load(file="data/data_brutes_rdata/tables_sauf_mei_2023_04_07_09_39_32.RData")
+
 passerelle<-mef_creer_passerelle()
 passerelle_hdf<-passerelle %>% 
   mef_ajouter_dept() %>%  #ajout d'une colonne numéro de département 
