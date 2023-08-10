@@ -8,7 +8,7 @@ if (!require("renv")) install.packages("renv")
 
 #### Fonctionnement de renv ------------------------------------
 ### Restaure les packages dans le lockfile :
-renv::restore()
+# renv::restore()
 
 ### Restaure les packages dans le lockfile :
 library("tidyverse")
@@ -18,3 +18,9 @@ library("devtools")
 #devtools::install_github("PascalIrz/aspe")
 library("aspe")
 library("gdata")
+
+
+### Fonctions perso
+
+source("./fonctions/creation_maille.R")
+
