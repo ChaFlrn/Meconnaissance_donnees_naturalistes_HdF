@@ -4,7 +4,7 @@
 #                                                          #
 ##%######################################################%##
 
-if (!require("renv")) install.packages("renv")
+# if (!require("renv")) install.packages("renv")
 
 #### Fonctionnement de renv ------------------------------------
 ### Restaure les packages dans le lockfile :
