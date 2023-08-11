@@ -454,8 +454,6 @@ gdata::keep(operation,
             clicnat_esp_pro,
             gon,
             gon_esp_pro,
-            sinp,
-            sinp_esp_pro,
             sure = TRUE)
 
 data_aspe <- passerelle_hdf %>%
