@@ -39,17 +39,27 @@ resultat_indice_pression_total_classe <- NULL
 
 for(val in unique(resultat_indice_pression_total$code_insee)) {
   
-  tableau <- resultat_indice_pression_total %>% 
+  tableau <- resultat_indice_pression_total %>%
     filter(code_insee %in% val)
   
   k_class <- round(1 + 3.22 * log10(nrow(tableau)), 0)
-    
-  classe <- classInt::classIntervals(tableau$nb_moy, n = k_class+1, style = "jenks")
   
-  tableau$classe <- cut(tableau$nb_moy, classe$brks)
+  classe <- classInt::classIntervals(tableau$nb_moy,
+                                     n = k_class+1,
+                                     style = "jenks",
+                                     dataPrecision = 0
+  )
   
-  resultat_indice_pression_total_classe <- rbind(resultat_indice_pression_total_classe, tableau)
-    
+  tableau$classe <- cut(tableau$nb_moy, classe$brks, include.lowest = FALSE)
+  
+  tableau <-
+    tableau %>%
+    mutate(classe_id = as.numeric(classe)) %>%
+    mutate(classe_id = if_else(is.na(classe_id), 0, classe_id))
+  
+  resultat_indice_pression_total_classe <- 
+    rbind(resultat_indice_pression_total_classe, tableau)
+  
 }
 
 ## Sauvegarde ####
