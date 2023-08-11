@@ -161,7 +161,21 @@ pas_calais_points_dans_mailles_pro<-
 #----------------------------------------------------------------#
 ## d) fusion des 5 fichiers ####
 cli::cli_h1("Fusion des fichiers")
-## Toutes espèces 
+
+## Mailles ####
+cli::cli_h2("Mailles")
+total_mailles <-
+  dplyr::bind_rows(oise_maille_5km, 
+                   aisne_maille_5km,
+                   nord_maille_5km,
+                   somme_maille_5km,
+                   pas_calais_maille_5km) %>%
+  dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
+
+save(total_mailles, file = "output/output_rdata/total_mailles.Rdata")
+
+
+## Toutes espèces ####
 cli::cli_h2("Toutes espèces")
 
 total_points_dans_mailles <-
@@ -173,7 +187,7 @@ total_points_dans_mailles <-
 
 save(total_points_dans_mailles, file = "output/output_rdata/total_points_dans_mailles.Rdata")
 
-## Espèces protégées
+## Espèces protégées ####
 cli::cli_h2("Espèces protégées")
 
 total_points_dans_mailles_esp_pro <-
