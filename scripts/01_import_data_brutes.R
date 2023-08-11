@@ -196,25 +196,6 @@ especes_pro <- dplyr::filter(especes, protection == "oui")
 
 clicnat_esp_pro <- merge(clicnat_groups, especes_pro, by.x = "cd_nom", by.y = "cd_nom")
 
-# clicnat_esp_pro <- clicnat_esp_pro %>%
-#   dplyr::select(
-#     id_synthese,
-#     cd_ref_sp,
-#     cd_nom,
-#     date_debut,
-#     nom_cite.y,
-#     regne,
-#     classe,
-#     ordre.y,
-#     famille,
-#     menace_region.y,
-#     rarete_region,
-#     nombre_min,
-#     nombre_max,
-#     niveau_validation,
-#     niveau_sensibilite,
-#     producteur)
-
 #### Trier et renommer les colonnes ####
 clicnat_esp_pro <- clicnat_esp_pro %>%
   dplyr::select(id = id_synthese,
@@ -244,138 +225,236 @@ cli::cli_h2("Données Groupe ornithologique et naturaliste")
 
 ## Chargement fichier ####
 data_gon <- sf::read_sf("Data_brutes/Sirf/230220_all_expo_deb2012")
-base::load(file="data/data_brutes_rdata/donnees_Gon.RData")
+base::load(file ="data/data_brutes_rdata/donnees_Gon.RData")
 
 ## Précision des données ####
 gon <- donnees_Gon %>%
-  select(id_cit,id_taxo,cdref,date_d, nom_lat,ordre, valid, geom,contrib)
+  dplyr::select(id_cit,
+                id_taxo,
+                cdref,
+                date_d,
+                nom_lat,
+                ordre,
+                valid,
+                geom,
+                contrib)
 
-gon<-gon[order(gon$date_d,decreasing=F),]
+gon<-gon[order(gon$date_d, decreasing=FALSE), ]
 
-gon[gon$date_d < "2012-01-01" ,"Periode"] <- "historique"
-gon[gon$date_d >= "2012-01-01" & gon$date_d <"2023-01-01" ,"Periode"] <- "voulue"
-gon[gon$date_d >= "2023-01-01","Periode"] <- "futur"
+gon[gon$date_d < "2012-01-01" , "Periode"] <- "historique"
+gon[gon$date_d >= "2012-01-01" & gon$date_d <"2023-01-01", "Periode"] <- "voulue"
+gon[gon$date_d >= "2023-01-01", "Periode"] <- "futur"
 
-gon<-filter(gon,Periode=="voulue")
+gon <- dplyr::filter(gon, Periode == "voulue")
 
 ## Sélection des données valides ####
 levels(as.factor(gon$valid))
 
-gon <- gon%>% filter(!is.na(valid))
+gon <- gon %>% dplyr::filter(!is.na(valid))
 
-gon[gon$valid == "Certain  ‐ très probable" ,"Validation"] <- "valide"
-gon[gon$valid == "Probable","Validation"] <- "valide"
-gon[gon$valid == "Douteux","Validation"] <- "non_valide"
-gon[gon$valid == "Non évalué","Validation"] <- "valide"
+gon[gon$valid == "Certain  ‐ très probable" , "Validation"] <- "valide"
+gon[gon$valid == "Probable", "Validation"] <- "valide"
+gon[gon$valid == "Douteux", "Validation"] <- "non_valide"
+gon[gon$valid == "Non évalué", "Validation"] <- "valide"
 
-gon <- dplyr::filter(gon, Validation=="valide")
-gonhesite <- dplyr::filter(gon, valid=="Non évalué")
+gon <- dplyr::filter(gon, Validation == "valide")
+gonhesite <- dplyr::filter(gon, valid == "Non évalué")
 
 ## Identification des groupes taxonomiques ####
 levels(as.factor(gon$ordre))
 
-amphibiens <-  subset (gon, subset= ordre %in%
-                         c("ANURA","CAUDATA","URODELA"))
+amphibiens <-  subset (gon, subset = ordre %in%
+                         c("ANURA", 
+                           "CAUDATA", 
+                           "URODELA"))
 amphibiens$groupe_taxo <- "amphibiens"
 
-mammiferes <- subset(gon,subset = ordre %in%
-                       c("RODENTIA","CARNIVORA","SORICOMORPHA","EULIPOTYPHLA","LAGOMORPHA"))
+mammiferes <- subset(
+  gon,
+  subset = ordre %in%
+    c(
+      "RODENTIA",
+      "CARNIVORA",
+      "SORICOMORPHA",
+      "EULIPOTYPHLA",
+      "LAGOMORPHA"))
 mammiferes$groupe_taxo <- "mammiferes"
 
-chiropteres <- subset(gon,subset = ordre %in%
+chiropteres <- subset(gon, subset = ordre %in%
                         c("CHIROPTERA"))
 chiropteres$groupe_taxo <- "chiropteres"
 
-reptiles <- subset(gon,subset = ordre %in%
-                     c("SQUAMATA","CHELONII"))
+reptiles <- subset(gon, subset = ordre %in%
+                     c("SQUAMATA", "CHELONII"))
 reptiles$groupe_taxo <- "reptiles"
 
-odonates <- subset(gon,subset = ordre %in%
+odonates <- subset(gon, subset = ordre %in%
                      c("ODONATA"))
 odonates$groupe_taxo <- "odonates"
 
-orthopteres <- subset(gon,subset = ordre %in%
+orthopteres <- subset(gon, subset = ordre %in%
                         c("ORTHOPTERA"))
 orthopteres$groupe_taxo <- "orthopteres"
 
-rhopaloceres <- subset(gon,subset = ordre %in%
+rhopaloceres <- subset(gon, subset = ordre %in%
                          c("LEPIDOPTERA"))
 rhopaloceres$groupe_taxo <- "rhopaloceres"
 
-poissons <- subset(gon,subset= ordre %in%
-                     c("PETROMYZONTIFORMES","ANGUILLIFORMES","CYPRINIFORMES","ESOCIFORMES","SALMONIFORMES","GADIFORMES","DECAPODA","ATHERINIFORMES","GASTEROSTEIFORMES","PERCIFORMES","PLEURONECTIFORMES","RAJIFORMES","SCORPAENIFORMES","SILURIFORMES","TETRAODONTIFORMES","AULOPIFORMES"))
+poissons <- subset(
+  gon,
+  subset = ordre %in%
+    c(
+      "PETROMYZONTIFORMES",
+      "ANGUILLIFORMES",
+      "CYPRINIFORMES",
+      "ESOCIFORMES",
+      "SALMONIFORMES",
+      "GADIFORMES",
+      "DECAPODA",
+      "ATHERINIFORMES",
+      "GASTEROSTEIFORMES",
+      "PERCIFORMES",
+      "PLEURONECTIFORMES",
+      "RAJIFORMES",
+      "SCORPAENIFORMES",
+      "SILURIFORMES",
+      "TETRAODONTIFORMES",
+      "AULOPIFORMES"))
 poissons$groupe_taxo <- "poissons"
 
-oiseaux_nicheurs <- subset(gon, subset= ordre %in%
-                             c("ANSERIFORMES","FALCONIFORMES","CICONIIFORMES","GALLIFORMES","GRUIFORMES","CHARADRIIFORMES","PASSERIFORMES","CAPRIMULGIFORMES","PODICIPEDIFORMES","STRIGIFORMES","CUCULIFORMES","PICIFORMES","PROCELLARIIFORMES","APODIFORMES","CORACIIFORMES","PELECANIFORMES","ACCIPITRIFORMES","BUCEROTIFORMES","COLUMBIFORMES","GAVIIFORMES","OTIDIFORMES","PHOENICOPTERIFORMES","PSITTACIFORMES","APODIFORMES"))
+oiseaux_nicheurs <- subset(
+  gon,
+  subset = ordre %in%
+    c(
+      "ANSERIFORMES",
+      "FALCONIFORMES",
+      "CICONIIFORMES",
+      "GALLIFORMES",
+      "GRUIFORMES",
+      "CHARADRIIFORMES",
+      "PASSERIFORMES",
+      "CAPRIMULGIFORMES",
+      "PODICIPEDIFORMES",
+      "STRIGIFORMES",
+      "CUCULIFORMES",
+      "PICIFORMES",
+      "PROCELLARIIFORMES",
+      "APODIFORMES",
+      "CORACIIFORMES",
+      "PELECANIFORMES",
+      "ACCIPITRIFORMES",
+      "BUCEROTIFORMES",
+      "COLUMBIFORMES",
+      "GAVIIFORMES",
+      "OTIDIFORMES",
+      "PHOENICOPTERIFORMES",
+      "PSITTACIFORMES",
+      "APODIFORMES"))
 oiseaux_nicheurs$groupe_taxo <- "oiseaux_nicheurs"
 
-gon_groups <- rbind.data.frame(amphibiens,chiropteres)
-gon_groups <- rbind.data.frame(gon_groups,mammiferes)
-gon_groups <- rbind.data.frame(gon_groups,odonates)
-gon_groups <- rbind.data.frame(gon_groups,oiseaux_nicheurs)
-gon_groups <- rbind.data.frame(gon_groups,orthopteres)
-gon_groups <- rbind.data.frame(gon_groups,poissons)
-gon_groups <- rbind.data.frame(gon_groups,reptiles)
-gon_groups <- rbind.data.frame(gon_groups,rhopaloceres)
+gon_groups <- data.table::rbindlist(list(amphibiens,
+                                             chiropteres,
+                                             mammiferes,
+                                             odonates,
+                                             oiseaux_nicheurs,
+                                             orthopteres,
+                                             poissons,
+                                             reptiles,
+                                             rhopaloceres)) %>% 
+  as.data.frame()
 
 ## Vérfication de la présence de doublons ####
-gon_groups<-gon_groups[!duplicated(gon_groups$id_cit), ]
-save(gon_groups, file="output/output_rdata/gon_groups.RData")
+gon_groups <- gon_groups[!duplicated(gon_groups$id_cit), ]
+save(gon_groups, file = "output/output_rdata/gon_groups.RData")
 
 ## Toutes espèces ####
 ### Trier et renommer les colonnes ####
 gon <- gon_groups %>%
-  select(id_cit,cdref,date_d, nom_lat,groupe_taxo, geom)
-colnames(gon) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
+  dplyr::select(id = id_cit , 
+                cd_nom = cdref, 
+                date = date_d, 
+                nom_scientifique = nom_lat, 
+                groupe_taxo, 
+                geom)
 
 gon$source <- "gon"
 
-save(gon, file="output/output_rdata/gon.RData")
 
 ### Sélection de la géométrie ####
+gon <- 
+  sf::st_as_sf(gon) %>% 
+  dplyr::filter(sf::st_is(. , "MULTIPOINT") | sf::st_is(. , "POINT"))
+
+gon <- gon %>%
+  select(id, 
+         cd_nom,
+         date,
+         nom_scientifique,
+         groupe_taxo,
+         source,
+         geom)
+
+save(gon, file = "output/output_rdata/gon.RData")
 
 ## Sélection des espèces protégées ####
-gon_groups$cd_nom<-as.numeric(gon_groups$id_taxo)
+gon_groups$cd_nom <- as.numeric(gon_groups$id_taxo)
 
-gon_esp_pro<-merge(gon_groups, especes_pro, by.x="cdref", by.y="cd_nom")
+gon_esp_pro <- merge(gon_groups, especes_pro, by.x = "cdref", by.y = "cd_nom")
 
 ### Trier et renommer les colonnes ####
 gon_esp_pro <- gon_esp_pro %>%
-  select(id_cit,cdref,date_d, nom_cite, ordre.y, menace_region, geometry)
-colnames(gon_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region","geom")
+  select(id = id_cit,
+         cd_nom = cdref,
+         date = date_d,
+         nom_scientifique = nom_cite,
+         ordre = ordre.y,
+         menace_region,
+         geom = geometry)
 
-gon_esp_pro <-as.data.frame(gon_esp_pro)
+gon_esp_pro <- as.data.frame(gon_esp_pro)
 gon_esp_pro$source <- "gon"
 
 ### Trier géométrie ####
+gon_esp_pro <- 
+  sf::st_as_sf(gon_esp_pro) %>% 
+  dplyr::filter(sf::st_is(. , "MULTIPOINT") | sf::st_is(. , "POINT"))
 
-# Enlever géometries sans passer par qgis
-
-st_write(gon_pro,
-         "gon_point.gpkg")
-
-gon_point <- sf :: st_read("gon_point.shp")
-
-gon <- gon_pro %>%
-  select(id,cd_nom,date, nom_scientifique,ordre,menace_region,source, geom)
+gon_esp_pro <- gon_esp_pro %>%
+  select(id,
+         cd_nom,
+         date,
+         nom_scientifique,
+         ordre,
+         menace_region,
+         source,
+         geom)
 
 save(gon_esp_pro, file="output/output_rdata/gon_esp_pro.RData")
 
-# OFB ####
+# OFB  ------------------------------------------
+cli::cli_h2("Office francais de la biodiversité")
+
 ## ASPE ####
+cli::cli_h3("ASPE")
+
 ### Récupération des données ####
 base::load(file="data/data_brutes_rdata/tables_sauf_mei_2023_04_07_09_39_32.RData")
 
-passerelle<-mef_creer_passerelle()
-passerelle_hdf<-passerelle %>%
-  mef_ajouter_dept() %>%  #ajout d'une colonne numéro de département
-  filter(dept %in% c('02', '59', '60', '62', '80')) %>% #filtrage des départements des Hdf
-  select(dept, ope_id,pop_id,sta_id,pre_id,lop_id) %>%   # selection des colonnes qui m'intéressent
-  distinct() #suppression des lignes doublons (lignes générées à cause des colonnes de lots etc.)
-
-data("dictionnaire")
-View(dictionnaire)
+passerelle <- mef_creer_passerelle()
+passerelle_hdf <- passerelle %>%
+  aspe::mef_ajouter_dept() %>%  #ajout d'une colonne numéro de département
+  dplyr::filter(dept %in% c('02',
+                     '59',
+                     '60',
+                     '62',
+                     '80')) %>% #filtrage des départements des Hdf
+  dyplr::select(dept,
+         ope_id,
+         pop_id,
+         sta_id,
+         pre_id,
+         lop_id) %>%   # selection des colonnes qui m'intéressent
+  dplyr::distinct() #suppression des lignes doublons (lignes générées à cause des colonnes de lots etc.)
 
 gdata::keep(operation,
             ref_espece,
@@ -385,61 +464,85 @@ gdata::keep(operation,
             sure = TRUE)
 
 data_aspe <- passerelle_hdf %>%
-  mef_ajouter_ope_date() %>%
-  filter(ope_date > lubridate::dmy("31/12/2011") & ope_date < lubridate::dmy("01/01/2023")) %>%
+  aspe::mef_ajouter_ope_date() %>%
+  dplyr::filter(ope_date > lubridate::dmy("31/12/2011") & ope_date < lubridate::dmy("01/01/2023")) %>%
   droplevels()
 
 data_op <- operation %>%
-  select(ope_pop_id,ope_date)
+  dplyr::select(ope_pop_id,
+                ope_date)
 
 data_pop <- point_prelevement %>%
-  select(pop_id,pop_geometrie, pop_coordonnees_x,pop_coordonnees_y)
+  dplyr::select(pop_id,
+                pop_geometrie,
+                pop_coordonnees_x,
+                pop_coordonnees_y)
 
 data_esp <- ref_espece %>%
-  select(esp_id,esp_code_taxref,esp_nom_latin)
+  dplyr::select(esp_id,
+                esp_code_taxref,
+                esp_nom_latin)
 
 data_lot <- lot_poissons %>%
-  select(lop_id,lop_esp_id)
+  dplyr::select(lop_id,
+                lop_esp_id)
 
-croisement_aspe<-merge(data_aspe,data_pop , by.x="pop_id", by.y="pop_id")
-lot_esp<-merge(data_lot,data_esp , by.x="lop_esp_id", by.y="esp_id")
-aspe<-merge(croisement_aspe,lot_esp , by.x="lop_id", by.y="lop_id")
+croisement_aspe <- merge(data_aspe, data_pop , by.x = "pop_id", by.y = "pop_id")
+lot_esp <- merge(data_lot, data_esp , by.x = "lop_esp_id", by.y = "esp_id")
+aspe <- merge(croisement_aspe, lot_esp, by.x = "lop_id", by.y = "lop_id")
 
 aspe <- aspe %>%
-  select(lop_id,pop_id,ope_id,esp_code_taxref,ope_date,annee, esp_nom_latin,dept, pop_coordonnees_x, pop_coordonnees_y, pop_geometrie)
+  dplyr::select(lop_id,
+                pop_id,
+                ope_id,
+                esp_code_taxref,
+                ope_date,annee, 
+                esp_nom_latin,
+                dept, 
+                pop_coordonnees_x, 
+                pop_coordonnees_y, 
+                pop_geometrie)
 
 ### Vérification des doublons ####
-aspe<-aspe[!duplicated(aspe$lop_id), ]
+aspe <- aspe[!duplicated(aspe$lop_id), ]
 
 ### Identification du groupe poissons ####
 levels(as.factor(aspe$esp_nom_latin))
 
-aspe[aspe$esp_nom_latin =="Astacus leptodactylus" ,"poissons"] <- "non"
-aspe[aspe$esp_nom_latin =="Eriocheir sinensis" ,"poissons"] <- "non"
-aspe[aspe$esp_nom_latin =="Faxionus limosus" ,"poissons"] <- "non"
-aspe[aspe$esp_nom_latin =="Pacifastacus leniusculus" ,"poissons"] <- "non"
-aspe[aspe$esp_nom_latin =="Procambarus clarkii" ,"poissons"] <- "non"
+aspe[aspe$esp_nom_latin == "Astacus leptodactylus", "poissons"] <- "non"
+aspe[aspe$esp_nom_latin == "Eriocheir sinensis", "poissons"] <- "non"
+aspe[aspe$esp_nom_latin == "Faxionus limosus", "poissons"] <- "non"
+aspe[aspe$esp_nom_latin == "Pacifastacus leniusculus", "poissons"] <- "non"
+aspe[aspe$esp_nom_latin == "Procambarus clarkii", "poissons"] <- "non"
 
-aspe_groups <- subset(aspe,is.na(poissons))
+aspe_groups <- subset(aspe, is.na(poissons))
 
 aspe_groups$poissons <- "poissons"
 
-save(aspe_groups, file="output/output_rdata/aspe_groups.RData")
+save(aspe_groups, file = "output/output_rdata/aspe_groups.RData")
 
 ### Toutes espèces ####
 aspe <- aspe_groups %>%
-  select(lop_id,esp_code_taxref,ope_date, esp_nom_latin, poissons,pop_coordonnees_x,pop_coordonnees_y)
-colnames(aspe) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","x","y")
+  dplyr::select(id = lop_id,
+                cd_nom = esp_code_taxref,
+                date = ope_date, 
+                nom_scientifique = esp_nom_latin,
+                groupe_taxo = poissons,
+                x = pop_coordonnees_x,
+                y = pop_coordonnees_y)
 
-aspe <- st_as_sf(aspe, coords = c("x","y"), crs = 2154, remove =TRUE)
+aspe <- sf::st_as_sf(aspe, coords = c("x","y"), crs = 2154, remove =TRUE)
 
-str(aspe)
-aspe$Date <- substr(aspe$date, 1,10)
-aspe$dat <- ymd(aspe$Date)
+aspe$Date <- substr(aspe$date, 1, 10)
+aspe$dat <- lubridate::ymd(aspe$Date)
 
 aspe <- aspe %>%
-  select(id, cd_nom,dat,nom_scient, groupe_tax, geometry)
-colnames(aspe) <- c("id","cd_nom","date","nom_scientifique","groupe_taxo","geom")
+  dplyr::select(id, 
+         cd_nom,
+         date = dat,
+         nom_scientifique = nom_scient, 
+         groupe_taxo = groupe_tax, 
+         geom = geometry)
 
 aspe <- as.data.frame(aspe)
 aspe$source <- "ofb"
@@ -447,15 +550,23 @@ aspe$source <- "ofb"
 save(aspe, file="output/output_rdata/aspe.RData")
 
 ### Sélection des espèces protégées ####
-aspe_esp_pro<-merge(aspe_groups, especes_pro, by.x="esp_code_taxref", by.y="cd_nom")
+aspe_esp_pro <- merge(aspe_groups, especes_pro, by.x="esp_code_taxref", by.y="cd_nom")
 
 ### Trier et renommer les variables ####
 aspe_esp_pro <- aspe_esp_pro %>%
-  select(lop_id,esp_code_taxref,ope_date,nom_cite,ordre,menace_region,dept,pop_coordonnees_x,pop_coordonnees_y,pop_geometrie)
+  dplyr::select(
+    id = lop_id,
+    cd_nom = esp_code_taxref,
+    date = ope_date,
+    nom_scientifique = nom_cite,
+    ordre,
+    menace_region,
+    departements = dept,
+    x = pop_coordonnees_x,
+    y = pop_coordonnees_y,
+    geom = pop_geometrie)
 
-colnames(aspe_esp_pro) <- c("id","cd_nom","date","nom_scientifique","ordre", "menace_region","departements","x","y", "geom")
-
-aspe_esp_pro <- st_as_sf(aspe_esp_pro, coords = c("x","y"), crs = 2154, remove =TRUE)
+aspe_esp_pro <- sf::st_as_sf(aspe_esp_pro, coords = c("x","y"), crs = 2154, remove =TRUE)
 
 aspe_esp_pro$Date <- substr(aspe_esp_pro$date, 1,10)
 aspe_esp_pro$dat <- ymd(aspe_esp_pro$Date)
