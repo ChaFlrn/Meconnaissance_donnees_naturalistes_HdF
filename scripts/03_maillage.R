@@ -81,35 +81,35 @@ data_tout_esp <- data_tout_esp %>% sf::st_as_sf(crs = 2154)
 oise_points_dans_mailles<- 
   data_tout_esp %>%
   sf::st_crop(sf::st_bbox(oise_maille_5km)) %>% 
-  sf::st_join(oise_maille_5km) %>% 
+  sf::st_intersection(oise_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## aisne
 aisne_points_dans_mailles<- 
   data_tout_esp %>%
   sf::st_crop(sf::st_bbox(aisne_maille_5km)) %>% 
-  sf::st_join(aisne_maille_5km) %>% 
+  sf::st_intersection(aisne_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## somme
 somme_points_dans_mailles<- 
   data_tout_esp %>%
   sf::st_crop(sf::st_bbox(somme_maille_5km)) %>% 
-  sf::st_join(somme_maille_5km) %>% 
+  sf::st_intersection(somme_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## nord
 nord_points_dans_mailles<- 
   data_tout_esp %>%
   sf::st_crop(sf::st_bbox(nord_maille_5km)) %>% 
-  sf::st_join(nord_maille_5km) %>% 
+  sf::st_intersection(nord_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## pas-de-calais
 pas_calais_points_dans_mailles<- 
   data_tout_esp %>%
   sf::st_crop(sf::st_bbox(pas_calais_maille_5km)) %>% 
-  sf::st_join(pas_calais_maille_5km) %>% 
+  sf::st_intersection(pas_calais_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ### Espèces protégées ####
@@ -123,35 +123,35 @@ data_esp_pro <- data_esp_pro %>% sf::st_as_sf(crs = 2154)
 oise_points_dans_mailles_pro<- 
   data_esp_pro %>%
   sf::st_crop(sf::st_bbox(oise_maille_5km)) %>% 
-  sf::st_join(oise_maille_5km) %>% 
+  sf::st_intersection(oise_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## aisne
 aisne_points_dans_mailles_pro<- 
   data_esp_pro %>%
   sf::st_crop(sf::st_bbox(aisne_maille_5km)) %>% 
-  sf::st_join(aisne_maille_5km) %>% 
+  sf::st_intersection(aisne_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## somme
 somme_points_dans_mailles_pro<- 
   data_esp_pro %>%
   sf::st_crop(sf::st_bbox(somme_maille_5km)) %>% 
-  sf::st_join(somme_maille_5km) %>% 
+  sf::st_intersection(somme_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## nord
 nord_points_dans_mailles_pro<- 
   data_esp_pro %>%
   sf::st_crop(sf::st_bbox(nord_maille_5km)) %>% 
-  sf::st_join(nord_maille_5km) %>% 
+  sf::st_intersection(nord_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 ## pas-de-calais
 pas_calais_points_dans_mailles_pro<- 
   data_esp_pro %>%
   sf::st_crop(sf::st_bbox(pas_calais_maille_5km)) %>% 
-  sf::st_join(pas_calais_maille_5km) %>% 
+  sf::st_intersection(pas_calais_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 
