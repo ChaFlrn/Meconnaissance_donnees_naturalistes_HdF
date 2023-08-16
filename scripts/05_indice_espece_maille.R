@@ -59,7 +59,7 @@ resultat_indice_espece_maille_grp <-
   sf::st_drop_geometry() %>% 
   group_by(code_insee, groupe_taxo, id_maille_dpt) %>% 
   summarise(nb_esp = length(unique(cd_nom))) %>% 
-  dplyr::ungroup() %>% 
+  dplyr::ungroup() %>%
   tidyr::complete(groupe_taxo, nesting(code_insee, id_maille_dpt), fill = list(nb_esp = 0)) 
 
 indice_espece_maille_final_grp <-

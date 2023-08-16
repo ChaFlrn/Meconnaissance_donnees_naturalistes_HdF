@@ -96,7 +96,7 @@ resultat_indice_pression_grp <-
   dplyr::left_join(indice_pression_total_group, 
                    total_mailles %>% select(code_insee, id_maille_dpt)) %>% 
   dplyr::ungroup() %>% 
-  dplyr::mutate(id_maille_group = paste(groupe_taxo, code_insee, sep = "_"))%>%
+  dplyr::mutate(id_maille_group = paste(groupe_taxo, id_maille_dpt, sep = "_"))%>%
   sf::st_as_sf()
 
 
@@ -134,8 +134,8 @@ for(val in unique(resultat_indice_pression_grp$code_insee)) {
 ## Sauvegarde ####
 cli::cli_h1("Sauvegarde")
 
-save(resultat_indice_pression_group_classe, file="output/output_rdata/resultat_indice_pression_group_classe.Rdata")
-#sf::write_sf(resultat_indice_pression_group_classe, "output/output_qgis/resultat_indice_pression_group_classe.gpkg")
+save(resultat_indice_pression_grp_classe, file="output/output_rdata/resultat_indice_pression_grp_classe.Rdata")
+#sf::write_sf(resultat_indice_pression_group_classe, "output/output_qgis/resultat_indice_pression_grp_classe.gpkg")
 
 
 
@@ -204,17 +204,14 @@ save(resultat_indice_pression_total_classe_pro, file="output/output_rdata/result
 
 
 #------------------------------------------------------------------------------#
-## Calcul nb passage, par groupes taxonomiques, toutes espèces ####
-cli::cli_h1("Calcul du nombre de passages par mailles, par groupes taxonomiques, toutes espèces")
+## Calcul nb passage, par groupes taxonomiques, espèces protégées ####
+cli::cli_h1("Calcul du nombre de passages par mailles, par groupes taxonomiques, espèces protégées")
 
-## Calcul nb passage, par groupes taxonomiques, toutes espèces ####
-cli::cli_h1("Calcul du nombre de passages par mailles, par groupes taxonomiques, toutes espèces")
-
-indice_pression_total_group <-
-  total_points_dans_mailles %>% 
+indice_pression_total_group_pro <-
+  total_points_dans_mailles_esp_pro %>% 
   sf::st_drop_geometry() %>% 
   dplyr::mutate(annees = as.numeric(substr(date, 1,4))) %>% 
-  dplyr::group_by(code_insee, id_maille_dpt, annees,groupe_taxo) %>% 
+  dplyr::group_by(code_insee, id_maille_dpt, annees, groupe_taxo) %>% 
   dplyr::summarise(passage = n()) %>%
   dplyr::ungroup() %>% 
   tidyr::complete(annees, nesting(code_insee, id_maille_dpt), fill = list(passage = 0)) %>% 
@@ -227,11 +224,11 @@ indice_pression_total_group <-
 ## Jointure aux mailles ####
 cli::cli_h1("Jointure aux mailles")
 
-resultat_indice_pression_grp <-
-  dplyr::left_join(indice_pression_total_group, 
+resultat_indice_pression_grp_pro <-
+  dplyr::left_join(indice_pression_total_group_pro, 
                    total_mailles %>% select(code_insee, id_maille_dpt)) %>% 
   dplyr::ungroup() %>% 
-  dplyr::mutate(id_maille_group = paste(groupe_taxo, code_insee, sep = "_"))%>%
+  dplyr::mutate(id_maille_group = paste(groupe_taxo, id_maille_dpt, sep = "_"))%>%
   sf::st_as_sf()
 
 
@@ -241,9 +238,9 @@ cli::cli_h1("Boucle pour discretiser les valeurs de l'indice pression par groupe
 
 resultat_indice_pression_grp_classe_pro <- NULL
 
-for(val in unique(resultat_indice_pression_total_pro$code_insee)) {
+for(val in unique(resultat_indice_pression_grp_pro$code_insee)) {
   
-  tableau <- resultat_indice_pression_total_pro %>%
+  tableau <- resultat_indice_pression_grp_pro %>%
     filter(code_insee %in% val)
   
   k_class <- round(1 + 3.22 * log10(nrow(tableau)), 0)
