@@ -1,7 +1,17 @@
+##%######################################################%##
+#                                                          #
+####       Script pour créer l'indice connaissance      ####
+####                (version 2023-08-10)                ####
+#                                                          #
+##%######################################################%##
 
-
+# Chargement des deux indices #
 base::load("output/output_rdata/resultat_indice_pression_total_classe.Rdata")
 base::load("output/output_rdata/resultat_indice_espece_maille_grp.Rdata")
+
+#------------------------------------------------------------------------------#
+# Jointure des deux fichiers et calcul de l'indice connaissance, toutes espèces #
+cli::cli_h1("Toutes espèces, tous groupes")
 
 jointure_indices <-
   resultat_indice_pression_total_classe %>% 
@@ -38,17 +48,18 @@ jointure_indices <-
                                          ))
 
 
-
-# jointure aux coordonnées des mailles
+#------------------------------------------------------------------------------#
+# Jointure aux coordonnées des mailles
 resultat_indice_connaissance <-
   jointure_indices %>% 
   left_join(total_mailles %>% select(code_insee, id_maille_dpt))
 
-## sauvegarde
+#------------------------------------------------------------------------------#
+## Sauvegarde
 save(resultat_indice_connaissance, file="output/output_rdata/resultat_indice_connaissance.Rdata")
 sf::write_sf(resultat_indice_connaissance, "output/output_qgis/resultat_indice_connaissance.gpkg")
 
-
+#------------------------------------------------------------------------------#
 # Boucle pour sauvegarde multiples
 dpt <- resultat_indice_connaissance$code_insee %>% unique()
 

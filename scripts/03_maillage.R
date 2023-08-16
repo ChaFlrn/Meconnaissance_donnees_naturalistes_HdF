@@ -8,7 +8,7 @@
 ### --> Requiert des couches geo importées dans l'environnement
 ### --> Requiert les couches assemblées des BDD espèces
 
-#----------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 ## a) Import des shapes ####
 cli::cli_h1("Import des shapes")
 
@@ -27,7 +27,7 @@ nord_shape <- sf::st_read("data/data_geo/nord.shp")
 ## pas-de-calais
 pas_calais_shape <- sf::st_read("data/data_geo/pas_calais.shp")
 
-#----------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 ## b) création des mailles avec la fonction dédiée 'creation_maille' ####
 cli::cli_h1("Création des mailles avec la fonction dédiée 'creation_maille'")
 
@@ -67,7 +67,7 @@ pas_calais_maille_5km <-
                 code_insee, 
                 nom_officiel = nom_offici)
 
-#----------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 ## c) jointure des couches mailles et especes ####
 cli::cli_h1("Jointure des couches mailles et especes")
 ### Toutes espèces #####
@@ -112,6 +112,7 @@ pas_calais_points_dans_mailles<-
   sf::st_intersection(pas_calais_maille_5km) %>% 
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
+#------------------------------------------------------------------------------#
 ### Espèces protégées ####
 cli::cli_h2("Espèces protégées")
 
@@ -155,10 +156,7 @@ pas_calais_points_dans_mailles_pro<-
   dplyr::mutate(id_maille_dpt = paste(nom_officiel, id_maille_dpt, sep = "_"))
 
 
-
-
-
-#----------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 ## d) fusion des 5 fichiers ####
 cli::cli_h1("Fusion des fichiers")
 

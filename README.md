@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 80
----
-
 # Projet sur la méconnaissance des données naturalistes dans la région des Hauts-de-France
 
 ## Objectif
@@ -101,12 +95,33 @@ jointes au fichier global de données. Ceci dans le but d'avoir pour chaque
 observation, la maille et le numéro de maille qui lui correspond. Cela permettra
 par la suite de calculer les différents indices.
 
+### 04_indice_pression
+
+L'indice pression permet de calculer la moyenne annuelle de passages (d'observations) pour chaque maille. Il faut donc compter le nombre de passages par jour dans une maille, et ce pour chaque année. Puis faire la moyenne annuelle sur la période 2012 à 2022. Cet indice est ensuite divisé en 9 classes d'après la règle de Sturges. La discrétisation se fait  par la méthode de classification des ruptures naturelles de Jenks. 
+
+
+### 05_indice_espece_maille
+
+L'indice espèce-maille représente le nombre d'espèces différentes par maille comparé à une valeur seuil définie. La valeur seuil correspond à un nombre d'espèces différentes fixé pour chaque groupe taxonomiques. Si dans une maille, son nombre d'espèces est inférieur à ce seuil, alors la maille sera considérée comme mauvaise et sera affectée de la valeur 0 (inversement, valeur de 1 lorsque la maille est supéireure au seuil). C'est donc un regroupement des observations par maille en fonction des espèces puis une comparaison à une valeur fixe. Lorsque tous les groupes taxonomiques sont confondus, l'indice établit un classement en faisant la moyenne des résultats de chaque groupe. Cette moyenne varie de 0 à 1 : 
+- très mauvaise : 0
+- moyenne : entre 0 et 0.5
+- bonne : entre 0.5 et 1
+- très bonne : 1
+
+### 06_indice_connaissance
+
+L'indice connaissance résulte du croisement des deux indices précédents. Il permet de donner une vision de la connaissance naturaliste en fonction de la pression d'observation et de la diversité d'espèces dans chaque maille. Il est discrétisé en 5 classes : 
+- très mauvaise
+- mauvaise
+- moyenne
+- bonne 
+- très bonne 
+
 ## Résultats
 
 Pour chaque indice, un fichier global contenant tous les départements et tous
 les groupes taxonomiques est créé. Ce fichier est à la fois créé pour toutes les
-espèces et également pour les espèces protégées. A la fin de l'exécution du
-projet, 2 types de formats ressortent pour les fichiers : - .RData - .gpkg
+espèces et également pour les espèces protégées. A la fin de l'exécution de l'indice connaissance, 2 types de formats ressortent pour les fichiers : - .RData - .gpkg
 
 Le format geopackage permet de pouvoir réaliser les cartographies sous Qgis,
 mais elles peuvent également être faites directement sous R à l'aide des

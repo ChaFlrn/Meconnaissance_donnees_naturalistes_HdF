@@ -452,8 +452,10 @@ gdata::keep(operation,
             especes_pro,
             clicnat,
             clicnat_esp_pro,
+            clicnat_groups,
             gon,
             gon_esp_pro,
+            gon_groups,
             sure = TRUE)
 
 data_aspe <- passerelle_hdf %>%
@@ -532,8 +534,8 @@ aspe <- aspe %>%
   dplyr::select(id, 
          cd_nom,
          date = dat,
-         nom_scientifique = nom_scient, 
-         groupe_taxo = groupe_tax, 
+         nom_scientifique, 
+         groupe_taxo, 
          geom = geometry)
 
 aspe <- as.data.frame(aspe)
