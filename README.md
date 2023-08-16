@@ -121,7 +121,7 @@ L'indice connaissance résulte du croisement des deux indices précédents. Il p
 
 Pour chaque indice, un fichier global contenant tous les départements et tous
 les groupes taxonomiques est créé. Ce fichier est à la fois créé pour toutes les
-espèces et également pour les espèces protégées. A la fin de l'exécution de l'indice connaissance, 2 types de formats ressortent pour les fichiers : - .RData - .gpkg
+espèces et également pour les espèces protégées. A la fin de l'exécution de chaque indice, 2 types de formats ressortent pour les fichiers : - .RData - .gpkg
 
 Le format geopackage permet de pouvoir réaliser les cartographies sous Qgis,
 mais elles peuvent également être faites directement sous R à l'aide des
