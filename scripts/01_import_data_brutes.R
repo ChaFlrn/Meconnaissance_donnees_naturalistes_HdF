@@ -813,6 +813,8 @@ oison$source <- "ofb"
 ### Sélection des espèces protégées ####
 oison_esp_pro <- merge(oison_groups, especes_pro, by.x = "cd_nom", by.y = "cd_nom")
 
+oison_esp_pro$Date <- lubridate::dmy(oison_esp_pro$Date)
+
 oison_esp_pro <- oison_esp_pro %>%
   dplyr::select(id = Identifiant,
          cd_nom,
@@ -838,6 +840,7 @@ oison_esp_pro <- oison_esp_pro %>%
                 menace_region, 
                 source,
                 geom = geometry)
+
 
 
 
